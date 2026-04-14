@@ -11,9 +11,15 @@ const ensureBaseAdmin = require("./services/adminSeedService");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const categorieRoutes = require("./routes/categorieRoutes");
+const statsRoutes = require("./routes/statsRoutes");
 
 // Initialize app
 const app = express();
+
+const { initBuckets } = require("./config/minio");
+initBuckets();
 
 // ── Middleware ────────────────────────────────────────────────
 app.options("/{*path}", cors());
@@ -40,6 +46,10 @@ app.use((req, res, next) => {
 
 // ── Routes ────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/categories", categorieRoutes);
+app.use("/api/livres", require("./routes/livreRoutes"));
+app.use("/api/stats", statsRoutes);
 
 // ── Health check ──────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
