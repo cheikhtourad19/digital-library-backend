@@ -14,6 +14,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const categorieRoutes = require("./routes/categorieRoutes");
 const statsRoutes = require("./routes/statsRoutes");
+const recommendationRoutes = require("./routes/recommendationRoutes");
 
 // Initialize app
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/categories", categorieRoutes);
 app.use("/api/livres", require("./routes/livreRoutes"));
 app.use("/api/stats", statsRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 // ── Health check ──────────────────────────────────────────────
 app.get("/api/health", (req, res) => {

@@ -13,6 +13,5 @@ router.get("/users", statsController.getUsersStats);
 router.get("/categories", statsController.getCategoriesStats);
 router.get("/top-livres-by-sexe", statsController.getTopLivresBySexe);
 router.get("/top-livres-by-age", statsController.getTopLivresByAge);
-router.get("/top-categories-by-sexe", statsController.getTopCategoriesBySexe);
 router.get("/top-categories-by-age", statsController.getTopCategoriesByAge);
 module.exports = router;

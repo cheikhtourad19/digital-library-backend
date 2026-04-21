@@ -576,6 +576,104 @@ exports.getTopLivresByAge = async (req, res) => {
   }
 };
 
-exports.getTopCategoriesBySexe = async (req, res) => {};
+exports.getTopCategoriesByAge = async (req, res) => {
+  const ageGroups = [
+    { label: "0-17", min: 0, max: 17 },
+    { label: "18-25", min: 18, max: 25 },
+    { label: "26-35", min: 26, max: 35 },
+    { label: "36-45", min: 36, max: 45 },
+    { label: "46-60", min: 46, max: 60 },
+    { label: "60+", min: 61, max: 120 },
+  ];
+  const ageGroup = req.query.ageGroup;
+  const group = ageGroups.find((g) => g.label === ageGroup);
+  if (!group) {
+    return res.status(400).json({ message: "Groupe d'âge invalide" });
+  }
+  try {
+    const sinceDate = new Date();
+    sinceDate.setFullYear(sinceDate.getFullYear() - group.max);
+    const untilDate = new Date();
+    untilDate.setFullYear(untilDate.getFullYear() - group.min);
 
-exports.getTopCategoriesByAge = async (req, res) => {};
+    const topCategories = await Commande.aggregate([
+      { $match: { statut: "confirmée" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "client",
+          foreignField: "_id",
+          as: "clientInfo",
+        },
+      },
+      { $unwind: "$clientInfo" },
+      {
+        $match: {
+          "clientInfo.dateNaissance": { $gte: sinceDate, $lte: untilDate },
+        },
+      },
+      { $unwind: "$livres" },
+      {
+        $lookup: {
+          from: "livres",
+          localField: "livres.livre",
+          foreignField: "_id",
+          as: "livre",
+        },
+      },
+      { $unwind: "$livre" },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "livre.categorie",
+          foreignField: "_id",
+          as: "categorie",
+        },
+      },
+      {
+        $addFields: {
+          categorie: { $arrayElemAt: ["$categorie", 0] },
+        },
+      },
+      {
+        $group: {
+          _id: "$livre.categorie",
+          nom: { $first: "$categorie.nom" },
+          slug: { $first: "$categorie.slug" },
+          copiesSold: { $sum: 1 },
+          revenue: { $sum: "$livres.prixAchat" },
+          orderIds: { $addToSet: "$_id" },
+          livreIds: { $addToSet: "$livre._id" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          categorieId: "$_id",
+          nom: { $ifNull: ["$nom", "Sans catégorie"] },
+          slug: 1,
+          copiesSold: 1,
+          revenue: 1,
+          ordersCount: { $size: "$orderIds" },
+          uniqueLivres: { $size: "$livreIds" },
+        },
+      },
+      { $sort: { copiesSold: -1, revenue: -1 } },
+      { $limit: 10 },
+    ]);
+
+    return res.status(200).json({
+      message: `Top catégories pour le groupe d'âge ${ageGroup} récupérées`,
+      data: {
+        ageGroup,
+        totalReturned: topCategories.length,
+        items: topCategories,
+      },
+    });
+  } catch (error) {
+    console.error("getTopCategoriesByAge error:", error);
+    return res.status(500).json({
+      message: "Erreur lors de la récupération des top catégories",
+    });
+  }
+};
